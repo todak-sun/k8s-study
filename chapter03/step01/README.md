@@ -1,57 +1,64 @@
 # 쿠버네티스 구성하기
 
-## Vagrantfile 살펴보기
+## 구성하기
+- 각 파일에 남긴 주석을 참고.
 
-```Vagrantfile
-# -*- mode: ruby -*-
-# vi: set ft=ruby :
+## 확인
+- vagrant up
+- m-k8s ssh로 접속
+- kubectl get nodes
+- kubectl get pods --all-namespace
+  - 기본 네임스페이스 default 외 모든 것을 표시
 
-Vagrant.configure("2") do |config|
-  N = 3 # 쿠버네티스에서 작업을 수행할 워커 노드의 수
-  Ver = '1.18.4' # 쿠버네티스의 버전
+## 파드 배포하는 순서에 따른 요소들의 역할
 
-  #=============#
-  # Master Node #
-  #=============#
+### 마스터노드
+1. kubectl
+   - 쿠버네티스 클러스터에 명령을 내리는 역할
+2. API 서버
+   - 쿠버네티스 클러스터의 중심 역할을 하는 통로.
+   - 주로 상태 값을 저장하는 etcd와 통신하지만, 그 밖 요소들 또한 API 서버를 중심에 두고 통신한다.
+3. etcd
+   - 구성 요소들의 상태 값이 모두 저장되는 곳
+   - etcd 외의 다른 구성 요소는 상태값을 관리하지 않는다.
+   - 분산 저장이 가능한 key-value 저장소이므로, 복제해 여러 곳에 저장해 두면 하나의 etcd에서 장애가 나더라도 시스템의 가용성을 확보할 수 있다.
 
-    config.vm.define "m-k8s" do |cfg|
-      cfg.vm.box = "sysnet4admin/CentOS-k8s"
-      cfg.vm.provider "virtualbox" do |vb|
-        vb.name = "m-k8s(github_SysNet4Admin)"
-        vb.cpus = 2
-        vb.memory = 3072
-        vb.customize ["modifyvm", :id, "--groups", "/k8s-SgMST-1.13.1(github_SysNet4Admin)"]
-      end
-      cfg.vm.host_name = "m-k8s"
-      cfg.vm.network "private_network", ip: "192.168.1.10"
-      cfg.vm.network "forwarded_port", guest: 22, host: 60010, auto_correct: true, id: "ssh"
-      cfg.vm.synced_folder "../data", "/vagrant", disabled: true 
-      cfg.vm.provision "shell", path: "config.sh", args: N
-      cfg.vm.provision "shell", path: "install_pkg.sh", args: [ Ver, "Main" ] # 위에서 설정한 쿠버네티스의 버전과, Main이란 문자열을 install_pkg.sh에 넘김
-      cfg.vm.provision "shell", path: "master_node.sh"
-    end
+4. 컨트롤러 매니저
+   - 쿠버네티스 클러스터의 오브젝트 상태를 관리한다.
+     - 워커 노드에서 통신이 되지 않는 경우, 상태 체크와 복구는 노드 컨트롤러
+     - 레플라카셋 컨트롤러는 레플리카셋에 요청받은 파드 개수대로 파드를 생성
 
-  #==============#
-  # Worker Nodes #
-  #==============#
+5. 스케줄러
+   - 노드의 상태와 자원, 레이블, 요구 조건 등을 고려해 파드를 어떤 워커 노드에 생성할 것인지를 결정하고 할당.
+   - 파드를 조건에 맞는 워커 노드에 지정하고, 파드가 워커 노드에 할당되는 일정을 관리
 
-  (1..N).each do |i|
-    config.vm.define "w#{i}-k8s" do |cfg|
-      cfg.vm.box = "sysnet4admin/CentOS-k8s"
-      cfg.vm.provider "virtualbox" do |vb|
-        vb.name = "w#{i}-k8s(github_SysNet4Admin)"
-        vb.cpus = 1
-        vb.memory = 2560
-        vb.customize ["modifyvm", :id, "--groups", "/k8s-SgMST-1.13.1(github_SysNet4Admin)"]
-      end
-      cfg.vm.host_name = "w#{i}-k8s"
-      cfg.vm.network "private_network", ip: "192.168.1.10#{i}"
-      cfg.vm.network "forwarded_port", guest: 22, host: "6010#{i}", auto_correct: true, id: "ssh"
-      cfg.vm.synced_folder "../data", "/vagrant", disabled: true
-      cfg.vm.provision "shell", path: "config.sh", args: N
-      cfg.vm.provision "shell", path: "install_pkg.sh", args: Ver
-      cfg.vm.provision "shell", path: "work_nodes.sh"
-    end
-  end
-end
-```
+### 워커 노드
+
+6. kubelet
+   - 파드의 구성 내용(PodSpec)을 받아서 컨테이너 런타임으로 전달
+   - 파드 안의 컨테이너들이 정상적으로 작동하는지 모니터링
+
+7. 컨테이너 런타임(CRI, Container Runtime Interface)
+   - 파드를 이루는 컨테이너 실행을 담당.
+   - 파드 안에서 다양한 종류의 컨테이너가 문제 없이 작동하게 만드는 표준 인터페이스
+
+8. 파드
+   - 한 개 이상의 컨테이너로 단일 목적의 일을 하기 위해 모인 단위
+   - 웹 서버 역할을 하거나, 로그/데이터 분석을 할 수도 있다.
+   - 파드는 **언제라도 죽을 수 있는 존재**다.
+ 
+
+### 선택 가능한 구성 요소
+
+9. 네트워크 플러그인
+10. CoreDNS
+
+## 파드의 생명주기로 쿠버네티스 구성 요소 살펴보기
+1. kubectl을 통해 API 서버에 파드 생성 요청
+2. (업데이트가 있을 때마다 매번) API 서버에 전달된 내용이 있으면 API 서버는 etcd에 전달된 내용을 모두 기록해 클러스터의 상태 값을 최신으로 유지(etcd 기록)
+3. API 서버에 파드 생성이 요청된 것을 컨트롤러 매니저가 인지하면 컨트롤러 매니저는 파드를 생성하고, 이 상태를 API 서버에 전달, 이 단계에서는 생성된 파드가 어떤 워커 노드에 배치될지 모른다.
+4. 스케줄러가 API 서버로부터 파드가 생성됐다는 정보를 인지한다. 스케줄러는 생성된 파드를 어떤 워커 노드에 적용할지 조건을 고려해 결정하고, 워커 노드에 파드를 띄우도록 요청한다.
+5. API 서버에 전달된 정보대로 지정한 워커 노드에 파드가 속해 있는지 스케줄러가 kubelet으로 확인
+6. kubelet에서 컨테이너 런타임으로 파드 생성을 요청
+7. 파드가 생성
+8. 파드가 사용 가능한 상태가 된다.
