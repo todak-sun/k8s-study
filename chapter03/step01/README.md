@@ -70,3 +70,72 @@
 ## 쿠버네티스 구성요소 기능 검증
 
 ### kubectl
+
+- 쿠버네티스 클러스터의 외부에서도 kubectl을 사용할 수 있으며, 명령을 내릴 수 있다. 이를 검증해보자.
+
+1. w3-k8s에 접속해본다.
+2. kubectl get nodes를 실행
+   => w3에서는 kubectl이 API 서버의 접속 정보를 모르기 때문에, 제대로 작동하지 않는다.
+3. 쿠버네티스 클러스터의 정보를 마스터 노드에서 scp 명령으로 w3 현재 디렉토리에 받아온다.
+   ```bash
+   >> w3
+   scp root@192.168.1.10:/etc/kubernetes/admin.conf .
+   kubectl get nodes --kubeconfig admin.conf
+   ```
+
+### kubelet
+
+- kubelet은 파드의 생성, 상태 관리, 복구 등을 담당하는 매우 중요한 구성요소다.
+- kubelet에 문제가 생기면 파드가 정상적으로 관리되지 않는다.
+
+1. 마스터 노드에서 파드를 배포한다
+   ```bash
+   kubectl create -f ~/_Book_k8sInfra/ch3/3.1.6/nginx-pod.yaml
+   ```
+2. 파드가 배포된 노드의 위치를 찾는다
+   ```bash
+   kubectl get pod -o wide
+   ```
+3. 파드가 배포된 노드에서 다음의 명령어를 통해 kubelet의 서비스를 멈춘다.
+   ```bash
+   systemctl stop kubelet
+   ```
+4. 마스터 노드로 돌아가 방금 생성한 pod를 삭제한다
+   ```bash
+   kubectl delete pod nginx-pod
+   ```
+5. 오랜 시간이 지나도, pod는 삭제되지 않는다. 파드의 상태를 확인하면 Terminating에서 변하지 않고 있음을 확인할 수 있다.
+6. 다시 w3로 돌아가 kubelet의 시스템을 시작시키면, 다시 정상적으로 작동함을 알 수 있다.
+
+### kube-proxy
+
+- kubelet이 파드의 상태를 관리한다면, kube-proxy는 파드의 통신을 담당한다. 
+- config.sh 파일에서 br_netfilter 커널 모듈을 적재하고 iptables를 거쳐 통신하도록 설정했다.
+  ```Vagrantfile
+   cat <<EOF >  /etc/sysctl.d/k8s.conf
+   net.bridge.bridge-nf-call-ip6tables = 1
+   net.bridge.bridge-nf-call-iptables = 1
+   EOF
+   modprobe br_netfilter 
+  ```
+
+1. 마스터 노드에 아래의 명령어를 통해 파드를 배포한다
+   ```bash
+   kubectl create -f ~/_Book_k8sInfra/ch3/3.1.6/nginx-pod.yaml
+   ```
+2. kubectl get pod -o wide 명령어로 파드의 IP, 워커 노드를 확인한다.
+3. curl 명령어로, nginx 웹 서버 메인 페이지 내용을 확인한다.
+4. pod가 배포되어 있는 노드로 접속해, 아래의 명령어를 통해 br_netfilter 모듈을 제거한다.
+   ```bash
+   modprobe -r br_netfilter
+   systemctl restart network
+   ```
+5. 마스터 노드로 돌아가, curl 요청을 보내면 응답이 오질 않는다.
+   => kube-proxy가 이용하는 br_netfilter에 문제가 있어, 파드의 nginx 웹 서버와의
+   통신만이 정상적으로 이루어지지 않는 상태이다. 따라서, STATUS는 정상적으로
+6. 아래의 명령어를 통해 다시 복구 시킨다
+   ```bash
+   modprobe br_netfilter
+   reboot
+   ```
+7. 일정 시간이 지나 파드의 상태를 확인하면, RESTART가 1오르고, IP가 변경된 것을 확인할 수 있다.
