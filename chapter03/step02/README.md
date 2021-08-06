@@ -212,3 +212,37 @@ spec:
 7. nginx 웹 페이지가 복구된 것을 확인한 후, nginx-pod에 접속한 후, nginx.pid가 생성된 시간으로 새로 생성된 프로세스인지 확인한다.
 
 ## 파드의 동작 보증 기능
+
+### 실습
+1. 어떤 파드들이 있는지 확인
+   ```bash  
+    kubectl get pod
+   ```
+2. nginx-pod 삭제
+   ```bash
+    kubectl delete pod nginx-pod
+   ```
+3. echo-hname pod중 하나 삭제
+   ```bash
+    kubectl delete pod echo-hname-{hash}
+   ```
+4. 다시 pod 목록 확인
+   - nginx-pod는 사라져 있다.
+     - 디플로이먼트에 속하는 파드가 아니기에, 어떤 컨트롤러도 이 파드를 관리하지 않는다.
+   - echo-hname의 경우, 삭제를 시도한 pod는 사라졌지만, pod의 총 개수는 이전과 같이 유지된다.
+     - echo-hname은 디플로이먼트에 속한 파드이다.
+     - replicas에서 6개로 선언했기에, 파드의 수를 항상 확인하고 부족하면 새로운 파드를 만들어낸다.
+5. 디플로이먼트 삭제
+   ```
+    kubectl delete deployment echo-hanme
+   ```
+
+## 노드 자원 보호하기
+- 노드의 목적: 노드는 쿠버네티스 스케줄러에서 파드를 할당받고 처리하는 역할을 한다.
+- 문제가 생긴 노드에 파드를 할당하면, 문제가 생길 가능성이 높다.
+- 하지만, 쿠버네티스는 모든 노드에 균등하게 파드를 할당하려고 한다.
+  - 이럴 때 cordon이란 기능을 사용해 해결할 수 있다!
+
+### 실습
+
+kubectl get pod -o=custom-columns=NAME:.metadata.name,IP:.status.podIP,STATUS:.status.phase,NODE:spec.nodeName
