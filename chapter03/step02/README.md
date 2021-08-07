@@ -245,4 +245,41 @@ spec:
 
 ### 실습
 
-kubectl get pod -o=custom-columns=NAME:.metadata.name,IP:.status.podIP,STATUS:.status.phase,NODE:spec.nodeName
+1. 실습에 필요한 파드 생성
+  ```bash
+    kubectl apply -f echo-hname.yaml
+  ```
+
+2. scale 명령어로 파드를 9개로 늘리기
+  ```bash
+    kubectl scale deployment echo-hname --replicas=9
+  ```
+
+3. 배포된 9개의 파드를 확인하기.
+  ```bash
+    kubectl get pod -o=custom-columns=NAME:.metadata.name,IP:.status.podIP,STATUS:.status.phase,NODE:spec.nodeName
+  ```
+ - 배포된 파드의 세부 값을 확인해보자
+   1. 배포된 파드 중 하나를 -o yaml 옵션으로 확인
+     ```bash
+       kubectl get pod {pad-name} -o yaml > pod.yaml
+     ```
+   2. pod.yaml의 내용을 살펴보며 원하는 세부 값을 확인
+
+4. scale의 파드의 수를 3개로 줄인다.
+  ```
+    kubectl scale deployment echo-hname --replicas=3
+  ```
+
+5. 더이상 배포를 원하지 않는 노드에 cordon 명령어 실행
+  ```
+    kubectl cordon {node-name}
+  ```
+
+6. 노드의 상태를 확인
+  ```
+    kubectl get nodes
+  ```
+  - 제대로 작동했다면, cordon이 적용된 노드에 SchedulingDisabled가 표시된다
+   
+
