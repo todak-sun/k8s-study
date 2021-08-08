@@ -267,19 +267,38 @@ spec:
    2. pod.yaml의 내용을 살펴보며 원하는 세부 값을 확인
 
 4. scale의 파드의 수를 3개로 줄인다.
-  ```
+  ```bash
     kubectl scale deployment echo-hname --replicas=3
   ```
 
 5. 더이상 배포를 원하지 않는 노드에 cordon 명령어 실행
-  ```
+  ```bash
     kubectl cordon {node-name}
   ```
 
 6. 노드의 상태를 확인
-  ```
+  ```bash
     kubectl get nodes
   ```
   - 제대로 작동했다면, cordon이 적용된 노드에 SchedulingDisabled가 표시된다
    
+7. 파드의 수를 늘려본다
+   ```bash
+    kubectl scale deployment echo-hname --replicas=9
+   ```
+  - 파드의 수가 9개로 늘어나지만, 위에서 cordon이 적용된 노드에는 배포되지 않는다.
 
+8. uncordon 명령어를 사용해, 해제해본다
+   ```bash
+    kubectl uncordon {node-name}
+   ```
+   
+## 노드 유지보수하기
+- 노드의 커널을 업데이트하거나, 노드의 메모리를 증설하는 등의 작업이 필요해 노드를 꺼야할 때는 어떻게 해야할까?
+- 이럴 경우를 대비해 쿠버네티스는 drain 기능을 제공한다.
+
+### 실습
+1. `kubectl drain` 명령으로 특정 노드를 파드가 없는 상태로 만든다.
+   ```bash
+    kubectl drain w3-k8s
+   ```
