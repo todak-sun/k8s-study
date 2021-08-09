@@ -334,7 +334,7 @@ spec:
 
 - 파드 운영시, 업데이트 또는 이전 버전으로 복구를 해야하는 일이 빈번하게 발생한다.
 
-### 실습
+### 실습 - 파드 업데이트
 
 1. 다음 명령으로 컨테이너 버전 업데이트를 테스트하기 위한 파드를 배포한다.
    ```
@@ -379,13 +379,55 @@ spec:
     curl -I --silent {IP} | grep Server
    ```
 5. `set image` 명령으로 파드의 nginx 컨테이너 버전을 1.16.0으로 업데이트 후, record로 기록
-   ```
+   ```bash
     kubectl set image deployment rollout-nginx nginx=nginx:1.16.0 --record
    ```
 6. 업데이트 후 파드 상태 확인
    - 파드의 이름과 IP가 모두 변경 되었다.
    - 업데이트 기본 값은 전체의 1/4(25%) 개이며, 최소값은 1개
 7. nginx 컨테이너가 1.16.0으로 모두 업데이트되면 Deployment의 상태를 확인
-   ```
+   ```bash
     kubectl rollout status deployment rollout-nginx
    ```
+8. `rollout history` 명령으로 그간 적용된 명령들 확인
+   ```bash
+    kubectl rollout history deployment rollout-nginx
+   ```
+9. curl -I 명령으로 업데이트(1.16.0)이 제대로 이루어졌는지도 확인
+   ```bash
+    curl -I --silent {IP} | grep Server
+   ```
+
+### 실습 - 파드 복구
+
+1. set image 명령으로 nginx 컨테이너 버전을 존재하지 않는 버전으로 세팅
+   ```bash
+    kubectl set image deployment rollout-nginx nginx=nginx:1.17.23 --record
+   ```
+   
+2. 파드 상태 확인
+   ```bash
+    kubectl get pods -o=custom-columns=NAME:.metadata.name,IP:.status.podIP,STATUS:.status.phase,NODE:.spec.nodeName
+   ```
+   - Pending 상태에서 넘어가지 않는다.
+3. `rollout status` 명령어로 확인
+   ```bash
+    kubectl rollout status deployment rollout-nginx
+   ```
+4. `describe` 명령으로 문제 살피기
+   ```bash
+    kubectl describe deployment rollout-nginx
+   ```
+5. 정상 상태를 복구하기 위해 rollout history로 확인
+   ```bash
+    kubectl rollout history deployment rollout-nginx
+   ```
+6. `rollout undo`로 명령 실행을 취소해 마지막 단계(revision 3)에서 전 단계(rivision 2)로 상태 되돌리기
+   ```bash
+    kubectl rollout undo deployment rollout-nginx
+   ```
+7. rollout history로 실행된 명령을 확인
+   ```bash
+    kubectl rollout history deployment rollout-nginx
+   ```
+   - 현재 상태를 revision 2로 되돌렸기 때문에, revision 2는 삭제되고, 가장 최근 상태는 revision 4가 된다.
