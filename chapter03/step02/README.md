@@ -302,3 +302,6 @@ spec:
    ```bash
     kubectl drain w3-k8s
    ```
+   - DemonSet 때문에 실행이 되지 않는다. 
+
+2. ``
