@@ -301,7 +301,91 @@ spec:
 1. `kubectl drain` 명령으로 특정 노드를 파드가 없는 상태로 만든다.
    ```bash
     kubectl drain w3-k8s
-   ```
-   - DemonSet 때문에 실행이 되지 않는다. 
+    ---------------------------------------------------------------------
+    error: unable to drain node "w3-k8s", aborting command...
 
-2. ``
+    There are pending nodes to be drained:
+    w3-k8s
+    error: cannot delete DaemonSet-managed Pods (use --ignore-daemonsets to ignore): kube-system/calico-node-rgzbs, kube-system/kube-proxy-b2pwp
+   ```
+   - drain은 실제로 파드를 옮기는 것이 아니라, 노드에서 파드를 삭제하고 다른 곳에 다시 생성한다.
+   - 쿠버네티스에서 대부분 이동은 파드를 지우고 다시 만드는 과정을 의미한다.
+   - 그러나, DemonSet의 경우 각 노드에 1개만 존재하는 파드라서, drain으로는 삭제할 수 없다.
+
+2. `drain` 명령어와 `ignore-demonsets` 옵션을 함께 사용
+  ```bash
+    kubectl drain w3-k8s --ignore-daemonsets
+  ```
+  - 본 옵션을 사용할 경우, 경고가 발생하지만 모든 파드가 이동된다.
+
+3. 모든 파드가 이동되었는지 확인
+  ```bash
+    kubectl get pods -o=custom-columns=NAME:.metadata.name,IP:.status.podIP,STATUS:.status.phase,NODE:.spec.nodeName
+  ```
+4. drain 명령이 수행된 노드의 상태 확인
+  ```bash
+    kubectl get nodes
+  ```
+  - `cordon` 명령어를 사용한 것과 같이, SchedulingDisabled 상태이다.
+
+5. `uncordon` 명령어로 노드를 다시 사용가능한 상태로 복구
+
+## 파드 업데이트하고 복구하기
+
+- 파드 운영시, 업데이트 또는 이전 버전으로 복구를 해야하는 일이 빈번하게 발생한다.
+
+### 실습
+
+1. 다음 명령으로 컨테이너 버전 업데이트를 테스트하기 위한 파드를 배포한다.
+   ```
+    kubectl apply -f rollout-nginx.yaml --record
+   ```
+  - --record 는 매우 중요한 옵션으로, 배포한 정보의 히스토리를 기록한다.
+  ```yaml
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+      # deployment의 이름
+    name: rollout-nginx
+  spec:
+      # 레플리카셋 생성 개수
+    replicas: 3
+      # 셀렉터의 레이블 지정
+    selector:
+      matchLabels:
+        app: nginx
+    template:
+      # 템플릿의 레이블 지정
+      metadata:
+        labels:
+          app: nginx
+          # 템플릿에서 사용할 컨테이너 이미지 및 버전 지정
+      spec:
+        containers:
+        - name: nginx
+          image: nginx:1.15.12
+  ```
+
+2. `record` 옵션으로 기록된 히스토리 확인
+   ```bash
+    kubectl rollout history deployment/rollout-nginx
+   ```
+3. 배포한 파드의 정보 확인
+   ```bash
+    kubectl get pod -o wide
+   ```
+4. 배포된 파드에 속해 있는 nginx 컨테이너 버전 확인
+   ```bash
+    curl -I --silent {IP} | grep Server
+   ```
+5. `set image` 명령으로 파드의 nginx 컨테이너 버전을 1.16.0으로 업데이트 후, record로 기록
+   ```
+    kubectl set image deployment rollout-nginx nginx=nginx:1.16.0 --record
+   ```
+6. 업데이트 후 파드 상태 확인
+   - 파드의 이름과 IP가 모두 변경 되었다.
+   - 업데이트 기본 값은 전체의 1/4(25%) 개이며, 최소값은 1개
+7. nginx 컨테이너가 1.16.0으로 모두 업데이트되면 Deployment의 상태를 확인
+   ```
+    kubectl rollout status deployment rollout-nginx
+   ```
