@@ -1,0 +1,39 @@
+# 들어오는 주소 값과 포트에 따라 노출된 서비스를 연결하는 역할을 설정한다.
+# 1. 외부에서 주소 값과 노드포트를 가지고 들어오는 것은
+#   hanme-svc-default 서비스와 연결된 파드로 넘기고,
+# 2. 외부에서 들어오는 주소 값, 노드포트와 함께 뒤에 /ip를 추가한 주소 값은
+#   ip-svc 서비스와 연결된 파드로 접속하게 설정
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  # Ingress의 이름
+  # 이름을 통해서 통신할 Ingress 컨트롤러를 확인
+  name: ingress-nginx
+  # 메타데이터의 기록 및 변경
+  # 여기선 rewrite-target을 /(기본 주소)로 지정
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  # 규칙을 지정
+  rules:
+  - http:
+      paths:
+      # 기본 경로 규칙
+      - path:
+      # 연결되는 서비스와 포트
+        backend:
+          serviceName: hname-svc-default
+          servicePort: 80
+      # 기본 경로에 /ip 추가
+      - path: /ip
+      # 연결되는 서비스와 포트
+        backend:
+          serviceName: ip-svc
+          servicePort: 80
+      # 기본 경로에 your-directory 경로 추가
+      - path: /your-directory
+      # 연결되는 서비스와 포트
+        backend:
+          serviceName: your-svc
+          servicePort: 80

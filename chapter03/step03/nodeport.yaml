@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  # 서비스의 이름
+  name: np-svc
+spec:
+  # 셀렉터의 레이블 지정
+  selector:
+    app: np-pods
+  # 사용할 프로토콜과 포트들을 지정
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30000
+  # 서비스 타입을 설정
+  type: NodePort
