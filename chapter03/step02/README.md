@@ -431,3 +431,30 @@ spec:
     kubectl rollout history deployment rollout-nginx
    ```
    - 현재 상태를 revision 2로 되돌렸기 때문에, revision 2는 삭제되고, 가장 최근 상태는 revision 4가 된다.
+8. 배포된 컨테이너의 nginx 버전을 다시 확인
+   ```bash
+    curl -I --silent {IP} | grep Server
+   ```
+9. `rollout status` 명령으로 변경이 정상적으로 적용됐는지 확인
+   ```bash
+    k rollout status deployment rollout-nginx
+   ```
+10. `describe`로 디플로이먼트 상태 세부 점검
+   ```bash
+    k describe deployments rollout-nginx
+   ```
+
+### 실습 - 특정 시점으로 파드 복구
+
+1. 처음 상태인 revision 1로 돌아가기
+   ```bash
+    k rollout undo deployment rollout-nginx --to-revision=1
+   ```
+2. 파드 상태 확인
+   ```bash
+     k get pods -o=custom-columns=NAME:.metadata.name,IP:.status.podIP,STATUS:.status.phase,NODE:.spec.nodeName
+   ```
+3. 배포된 컨테이너의 nginx 버전 확인
+   ```bash
+    curl -I --silent {IP} | grep Server
+   ```
