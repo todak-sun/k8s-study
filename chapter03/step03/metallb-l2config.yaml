@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # 네임스페이스의 이름
+  namespace: metallb-system
+  # 컨피그맵 이름
+  name: config
+data:
+  # 설정 내용
+  config: |
+    # metallb의 세부설정
+    address-pools:
+    - name: nginx-ip-range
+      # metallb에서 제공하는 로드밸런서의 동작 방식
+      protocol: layer2
+      # metallb에서 제공하는 로드밸런서의 Ext 주소
+      addresses:
+      - 192.168.1.11-192.168.1.13

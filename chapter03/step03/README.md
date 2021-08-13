@@ -192,6 +192,59 @@
     k scale deployment lb-ip-pods --replicas=3
   ```
 2. 두 종류의 파드가 총 6개 배포됐는지 확인.
-  ```
+  ```bash
     k get po -o wide
+  ```
+3. metallb 구성
+  ```bash
+    k apply -f metallb.yaml
+  ```
+4. metallb 구성 확인
+  ```bash
+    k get po -n metallb-system -o wide
+  ```
+  - 파드가 5개(controller 1개, speaker 4개), IP, 상태 확인
+5. MetalLB 설정 적용
+  ```bash
+    k apply -f metallb-l2config.yaml
+  ```
+6. configmap 확인
+  ```bash
+    k get configmaps -n metallb-system
+  ```
+
+7. `-o yaml` 옵션을 통해, 설정이 올바르게 적용됐는지 다시 확인
+  ```bash
+    k get configmaps -n metallb-system -o yaml
+  ```
+8. 각 디플로이먼트를 로드밸런서 서비스로 노출
+  ```bash
+    k expose deployment lb-hname-pods --type=LoadBalancer --name=lb-hname-svc --port=80
+    k expose deployment lb-ip-pods --type=LoadBalancer --name=lb-ip-svc --port=80
+  ```
+9. 서비스 확인
+  ```bash
+    k get svc
+  ```
+10. EXTERNAL-IP 확인 및 브라우저를 통해 접속 시도
+
+11. 로드밸런서 기능 정상 작동여부 확인
+  ```powershell
+    $i=0; while($true)
+    {
+      % { $i++; write-host -NoNewline "$i $_" }
+      (Invoke-RestMethod "http://192.168.1.11")-replace '\n', " "
+    }
+  ```
+12. `scale` 명령으로 파드 6개로 증가
+  ```bash
+    k scale deployment lb-hname-pods --replicas=6
+  ```
+
+13. 실습내용 삭제
+  ```bash
+    k delete deployments.apps lb-hname-pods
+    k delete deployments.apps lb-ip-pods
+    k delete service lb-hname-svc
+    k delete service lb-ip-svc
   ```
