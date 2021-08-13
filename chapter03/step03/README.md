@@ -129,6 +129,69 @@
     k apply -f ingress.yaml
   ```
 9. 노드포트 서비스로 생성된 NGINX 인그레스 컨트롤러 확인
-  ```
+  ```bash
     k get svc -n ingress-nginx
+  ```
+10. expose 명령어로 deployment 노출
+  ```bash
+    k expose deployment in-hname-pod --name=hname-svc-default --port=80,443
+    k expose deployment in-ip-pod --name=ip-svc --port=80,443
+  ```
+  - 클러스터 내부에서만 사용하는 파드를 클러스터 외부에 노출할 수 있는 구역으로 옮기는 작업.
+  - 내부와 외부 네트워크를 분리해 관리하는 DMZ와 유사한 기능
+  - 각 방에 있는 물건을 외부로 내보내기 전에 공용 공간인 거실로 모두 옮기는 것과 유사
+
+11. 디플로이먼트가 서비스에 정상적으로 노출되어있는지 확인
+  ```bash
+    k get svc
+  ```
+12. 브라우저로 접속시도
+  - http://{node-ip}:30100
+  - http://{node-ip}:30100/ip
+  - https://{node-ip}:30101
+  - https://{node-ip}:30101/ip
+
+13. 자원 모두 삭제
+  ```bash
+    k delete deployments.apps in-hname-pod
+    k delete deployments.apps in-ip-pod
+    k delete service hname-svc-default
+    k delete service ip-svc
+    clear
+    k delete -f ingress-nginx.yaml
+    k delete -f ingress-config.yaml
+  ```
+## 클라우드에서 쉽게 구성 가능한 로드밸런서
+
+- 앞서보낸 방식은 매우 비효율적이다.
+  - 들어오는 요청을 모두 워커 노드의 노드포트를 통해 노드포트 서비스로 이동
+  - 이를 다시 쿠버네티스의 파드로 전달
+
+- 쿠버네티스에서는 로드밸런서(LoadBalancer)라는 서비스 타입을 제공한다.
+- 로드밸런서를 사용하기 위해서는 로드밸런서를 구현해 둔 서비스업체의 도움을 받아야한다.
+- 클라우드에서 제공하는 로드밸런서 서비스를 사용하면, 외부와 통신할 수 있는 IP가 부여되고, 외부와 통신할 수 있으며 부하도 분산된다.
+
+## 온프레미스에서 로드밸런서를 제공하는 MetalLB
+
+- 온프레미스에서 로드밸런서를 사용하려면, 내부에 로드밸런서 서비스를 받아줄 구성이 필요하다.
+- MetalLB는 베어메탈(bare metal, 운영체제가 설치되지 않은 하드웨어)로 구성된 쿠버네티스에서도 로드밸런서를 사용할 수 있게 고안된 프로젝트다.
+- MetalLB는 특별한 네트워크 설정이나 구성없이, 기존 L2네트워크(ARP/NDP)와 L3(네트워크BGP)로 로드밸런서를 구현한다.
+- 실습은 MetalLB의 L2 네트워크로 로드밸런서를 구현한다.
+
+### MetalLB
+- MetalLB 컨트롤러는 작동 방식(Protocal, 프로토콜)을 정의하고 EXTERNAL-IP를 부여해 관리한다.
+- MetalLB 스피커(speaker)는 정해진 작동 방식(L2/ARP, L3/BGP)에 따라 경로를 만들 수 있도록 네트워크 정보를 광고하고 수집해 각 파드의 경로를 제공한다.
+- 이때 L2는 스피커 중에서 리더를 선출해 경로 제공을 총괄한다.
+
+### 실습
+1. 디플로이먼트를 통해 파드를 생서하고, `scale` 명령으로 파드를 3개로 늘린다.
+  ```bash
+    k create deployment lb-hname-pods --image=sysnet4admin/echo-hname
+    k scale deployment lb-hname-pods --replicas=3
+    k create deployment lb-ip-pods --image=sysnet4admin/echo-ip
+    k scale deployment lb-ip-pods --replicas=3
+  ```
+2. 두 종류의 파드가 총 6개 배포됐는지 확인.
+  ```
+    k get po -o wide
   ```
