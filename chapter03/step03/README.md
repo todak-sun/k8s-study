@@ -248,3 +248,5 @@
     k delete service lb-hname-svc
     k delete service lb-ip-svc
   ```
+
+## 부하에 따라 자동으로 파드 수를 조절하는 HPA
