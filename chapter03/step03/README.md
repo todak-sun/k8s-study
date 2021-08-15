@@ -250,3 +250,28 @@
   ```
 
 ## 부하에 따라 자동으로 파드 수를 조절하는 HPA
+
+- 쿠버네티스는 부하량에 따라 디플로이먼트의 파드 수를 유동적으로 관리하는 기능을 제공한다.
+- 이것을 HPA(Horizontal Pod Autoscaler)라고 한다.
+
+### 실습
+
+1. 디플로이먼트 생성
+```bash
+  k create deployment hpa-hname-pods --image=sysnet4admin/echo-hname
+```
+
+2. expose를 실행해, 로드밸런서 서비스로 설정
+```bash
+  k expose deployment hpa-hname-pods --type=LoadBalancer --name=hpa-hname-svc --port=80
+```
+
+3. 로드밸런서 서비스와 부여된 IP 확인
+```bash
+  k get svc
+```
+
+4. `top`을 활용해 부하 확인
+```bash
+  k top pods
+```
