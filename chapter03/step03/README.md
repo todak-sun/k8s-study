@@ -257,24 +257,33 @@
 ### 실습
 
 1. 디플로이먼트 생성
-```bash
-  k create deployment hpa-hname-pods --image=sysnet4admin/echo-hname
-```
+  ```bash
+    k create deployment hpa-hname-pods --image=sysnet4admin/echo-hname
+  ```
 
 2. expose를 실행해, 로드밸런서 서비스로 설정
-```bash
-  k expose deployment hpa-hname-pods --type=LoadBalancer --name=hpa-hname-svc --port=80
-```
+  ```bash
+    k expose deployment hpa-hname-pods --type=LoadBalancer --name=hpa-hname-svc --port=80
+  ```
 
 3. 로드밸런서 서비스와 부여된 IP 확인
-```bash
-  k get svc
-```
+  ```bash
+    k get svc
+  ```
 
 4. `top`을 활용해 부하 확인
-```bash
-  k top pods
-```
+  ```bash
+    k top pods
+  ```
   - 자원을 요청하는 설정이 없다는 에러 발생.
   - HPA가 자원을 요청할 때, Metrics-Server를 통해 계측값을 전달 받는다.
   - 하지만, 현재 메트릭 서버가 없기 때문에 에러가 발생한다.
+
+5. 오브젝트 스펙을 통해 메트릭 서버 설치
+  ```bash
+    k create -f metrics-server.yaml
+  ```
+6. 메트릭 서버 설정 후, 다시 한번 `top` 명령어 실행
+  ```bash
+    k top pods
+  ```
