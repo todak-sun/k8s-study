@@ -287,3 +287,15 @@
   ```bash
     k top pods
   ```
+7. `edit` 명령어를 실행해 배포된 디플로이먼트 내용 확인
+  ```bash
+    k edit deployment hpa-hname-pods
+  ```
+8. 일정시간이 지나면 스펙이 변경돼 새로운 파드가 생성된다.
+  ```bash
+    k top pods
+  ```
+9. autoscale을 설정
+  ```bash
+    k autoscale deployment hpa-hname-pods --min=1 --max=30 --cpu-percent=50
+  ```
