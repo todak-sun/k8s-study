@@ -287,9 +287,21 @@
   ```bash
     k top pods
   ```
+  - scale 기준 값이 설정돼 있지 않아, 파드 증설 시점을 알 수 없다.
+  - 파드에 부하가 걸리기 전에 scale이 실행될 수 있게, deployment를 수정한다.
 7. `edit` 명령어를 실행해 배포된 디플로이먼트 내용 확인
   ```bash
     k edit deployment hpa-hname-pods
+  ```
+  - m은 milliunits의 약어로, 1000m은 1개의 CPU를 의미한다.
+  - 10m은 파드의 CPU 0.01 사용을 기준으로 파드 증설
+  - 순간적으로 한쪽 파드로 부하가 몰릴 경우를 대비해 CPU 사용 제한을 0.05로 제한
+  ```yaml
+    resources:
+      requests:
+        cpu: "10m"
+      limits:
+        cpu: "50m"
   ```
 8. 일정시간이 지나면 스펙이 변경돼 새로운 파드가 생성된다.
   ```bash
@@ -299,3 +311,14 @@
   ```bash
     k autoscale deployment hpa-hname-pods --min=1 --max=30 --cpu-percent=50
   ```
+  - min은 최소 파드의 수를 의미
+  - max는 최대 파드의 수를 의미
+  - percent는 CPU 사용량이 50%를 넘게되면 autoscale 하겠다는 뜻
+
+```powershell
+$i=0; while($true)
+{
+  % { $i++; write-host -NoNewline "$i $_" }
+  (Invoke-RestMethod "http://192.168.1.11")-replace '\n', " "
+}
+```
