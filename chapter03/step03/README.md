@@ -315,10 +315,24 @@
   - max는 최대 파드의 수를 의미
   - percent는 CPU 사용량이 50%를 넘게되면 autoscale 하겠다는 뜻
 
-```powershell
-$i=0; while($true)
-{
-  % { $i++; write-host -NoNewline "$i $_" }
-  (Invoke-RestMethod "http://192.168.1.11")-replace '\n', " "
-}
-```
+10. 테스트를 위해, 3개의 터미널을 띄워 각 터미널 창에서 변화하는 모습을 관찰한다.
+  ```bash
+    watch kubectl top pods
+  ```
+  ```bash
+    watch kubectl get pods
+  ```
+  ```powershell
+  $i=0; while($true)
+  {
+    % { $i++; write-host -NoNewline "$i $_" }
+    (Invoke-RestMethod "http://192.168.1.11")-replace '\n', " "
+  }
+  ```
+11. 삭제
+  ```
+    k delete deployment hpa-hname-pods
+    k delete hpa hpa-hname-pods
+    k delete service hpa-hname-svc
+    k delete -f ~/_Book_k8sInfra/ch3/3.3.5/metrics-server.yaml
+  ```
