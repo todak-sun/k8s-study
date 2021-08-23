@@ -334,5 +334,14 @@
     k delete deployment hpa-hname-pods
     k delete hpa hpa-hname-pods
     k delete service hpa-hname-svc
-    k delete -f ~/_Book_k8sInfra/ch3/3.3.5/metrics-server.yaml
+    k delete -f metrics-server.yaml
   ```
+
+### HPA를 통해 늘어나는 파드 수 계산
+
+- deployment에서 resources의 CPU를 10m으로 설정하고, autoscale에서 cpu-percent를 50%로 할 경우
+  - 29m의 부하를 받고 있는 파드
+  - 1개 파드가 처리할 수 있는 부하를 10m으로 설정하였고, CPU 부하량이 50%가 넘으면 추가 파드를 생성한다.
+  - 부하가 5m이 넘으면 파드를 증설하게 된다. 따라서 29m/5 를 계산한 값을 올림처리 한, 6만큼 파드가 증가한다.
+  - 하지만, 부하의 총 량을 가지고 HPA가 작동하기 때문에, 일부 파드는 5m을 넘을 수도 있다.
+  - `kubectl get hpa`를 통해 HPA의 현재 상태를 요약해 보여준다

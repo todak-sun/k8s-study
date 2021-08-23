@@ -2,7 +2,7 @@
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
-  N = 3 # max number of worker nodes
+  N = 4 # max number of worker nodes
   Ver = '1.18.4' # Kubernetes Version to install
 
   #=============#
