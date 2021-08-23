@@ -36,3 +36,56 @@
   ```bash
     k get pods speaker-p2p2j -o yaml -n metallb-system
   ```
+
+## 컨피그맵
+
+- 설정을 목적으로 사용하는 오브젝트
+
+### 실습
+
+1. 테스트용 디플로이먼트 생성
+  ```bash
+    k create deployment cfgmap --image=sysnet4admin/echo-hname
+  ```
+
+2. `cfgmap` 을 로드밸런서(MetalLB)를 통해 노출하고 이름은 cfgmap-svc로 지정
+  ```bash
+    k expose deployment cfgmap --type=LoadBalancer --name=cfgmap-svc --port=80
+  ```
+3. 생성된 서비스의 IP 확인
+  ```bash
+    k get svc
+  ```
+4. 사전 구성되어 있는 컨피그맵의 기존 IP를 sed 명령을 사용해 변경
+  ```bash
+    cat ~/_Book_k8sInfra/ch3/3.4.2/metallb-l2config.yaml | grep 192.
+    sed -i 's/11/21/;s/13/23/' ~/_Book_k8sInfra/ch3/3.4.2/metallb-l2config.yaml
+    cat ~/_Book_k8sInfra/ch3/3.4.2/metallb-l2config.yaml | grep 192.
+  ```
+5. 변경된 컨피그맵 적용
+  ```bash
+    k apply -f ~/_Book_k8sInfra/ch3/3.4.2/metallb-l2config.yaml
+  ```
+6. MetalLB와 관련된 모든 파드 삭제
+  ```bash
+    k delete pod --all -n metallb-system
+  ```
+7. 새로 생성된 MetalLB의 파드 확인
+  ```bash
+    k get pod -n metallb-system
+  ```
+8. 기존 노출한 서비스를 삭제하고 동일한 이름으로 다시 생성
+  ```bash
+    k delete service cfgmap-svc
+    k expose deployment cfgmap --type=LoadBalancer --name=cfgmap-svc --port=80
+  ```
+9. 변경된 설정대로 MetalLB 서비스의 IP가 변경되었는지 확인
+  ```bash
+    k get svc
+  ```
+10. 변경된 IP로 브라우저를 통해 접속
+11. 삭제
+  ```bash
+    k delete deployment cfgmap
+    k delete service cfgmap-svc
+  ```
