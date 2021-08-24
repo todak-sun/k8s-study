@@ -89,3 +89,20 @@
     k delete deployment cfgmap
     k delete service cfgmap-svc
   ```
+
+## PV와 PVC
+
+- 파드는 언제라도 생성되고 지워진다.
+- 하지만, 파드에서 생성한 내용을 기록하고 보관하거나 모든 파드가 동일한 설정 값을 유지하고 관리하기 위해 공유된 볼륨으로부터 공통된 설정을 가지고 올 수 있도록 설계해야 할 때도 있다.
+- 이를 위해, 쿠버네티스가 제공하는 볼륨은 아래와 같이 다양하다.
+  - 임시: emptyDir
+  - 로컬: host Path, local
+  - 원격: persistentVolumeClaim, cephfs, cinder, csi, fc(fibre channel), flexVolume, flocker, glusterefs, iscsi, nfs, portworxVolume, quobyte, rbd, scaleIO, storageos, vsphereVolume
+  - 특수 목적: downwardAPI, configMap, secret, azureFile, projected
+  - 클라우드: awsElasticBlockStore, azureDisk, gcePersistentDisk
+
+- 쿠버네티스는 필요할 때 PVC(PersistentVolumeClaim, 지속적으로 사용 가능한 볼륨 요청)를 요청해 사용한다.
+- PVC를 사용하려면 PV(PersistentVolume, 지속적으로 사용 가능한 볼륨)로 볼륨을 선언해야 한다.
+- PV는 볼륨을 사용할 수 있게 준비하는 단계, PVC는 준비된 볼륨에서 일정 공간을 할당받는 것이다.
+
+### 실습 - NFS 볼륨에 PV/PVC 만들고 파드에 연결
