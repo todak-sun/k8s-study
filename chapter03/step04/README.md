@@ -106,3 +106,13 @@
 - PV는 볼륨을 사용할 수 있게 준비하는 단계, PVC는 준비된 볼륨에서 일정 공간을 할당받는 것이다.
 
 ### 실습 - NFS 볼륨에 PV/PVC 만들고 파드에 연결
+
+1. 마스터 노드에 NFS 구성
+  ```bash
+    mkdir /nfs_shared
+    echo '/nfs_shared 192.168.1.0/24(rw,sync,no_root_squash)' >> /etc/exports
+  ```
+2. NFS 서버 활성화 & 재시작시에도 자동적용
+  ```
+    systemctl enable --now nfs
+  ```
