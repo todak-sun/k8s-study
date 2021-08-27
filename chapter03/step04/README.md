@@ -113,6 +113,19 @@
     echo '/nfs_shared 192.168.1.0/24(rw,sync,no_root_squash)' >> /etc/exports
   ```
 2. NFS 서버 활성화 & 재시작시에도 자동적용
-  ```
+  ```bash
     systemctl enable --now nfs
   ```
+3. PV 생성
+  ```bash
+    k apply -f ~/_Book_k8sInfra/ch3/3.4.3/nfs-pv.yaml
+  ```
+4. PV 상태확인
+  ```bash
+    k get pv
+  ```
+5. PVC 생성
+  ```bash
+    k apply -f ~/Book_k8sInfra/ch3/3.4.3/nfs-pvc.yaml
+  ```
+6. 
