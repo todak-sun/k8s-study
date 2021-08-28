@@ -128,4 +128,19 @@
   ```bash
     k apply -f ~/Book_k8sInfra/ch3/3.4.3/nfs-pvc.yaml
   ```
-6. 
+6. 생성된 PVC 확인
+  ```bash
+    k get pvc
+  ```
+7. PV의 상태 다시 확인
+  ```bash
+    k get pv
+  ```
+8. 생성한 PVC를 볼륨으로 사용하는 디플로이먼트 배포
+  ```bash
+    k apply -f ~/Book_k8sInfra/ch3/3.4.3/nfs-pvc-deploy.yaml
+  ```
+9. 생성된 파드 확인
+  ```bash
+    k get pods
+  ```
